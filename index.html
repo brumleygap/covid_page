@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Scripts for app -->
+    <script src="https://cdn.rawgit.com/socrata/soda-js/master/lib/soda-js.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.28.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+    <script src="covidData.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <title>Washington County COVID-19 Stats</title>
+</head>
+
+<body>
+    <script>
+        chartData();
+    </script>
+
+    <div>
+        The current vaccination phase is <span class="vaccine_phase" id="phase"></span>
+    </div>
+
+    <div class="my_card">
+        <div class=header>7-day Avg. Cases</div>
+        <div class=data>
+            <span id="currentCaseRate"></span>
+        </div>
+        <div class="footer">Wash. County</div>
+    </div>
+
+
+    <div class="my_card">
+        <div class="header">7-day Avg. Pos. PCR Tests</div>
+        <div class=data>
+            <span id="posTest"></span>
+        </div>
+        <div class="footer">Mt. Rogers Dist.</div>
+    </div>
+    <br />
+
+    <div class="my_card">
+        <div class="header">Total Cases</div>
+        <div class=data id="totalCases"></div>
+        <div class="footer" id="newCases"></div>
+    </div>
+
+    <div class="my_card">
+        <div class="header">Deaths</div>
+        <div class=data id="totalDeaths"></div>
+        <div class="footer" id="newDeaths"></div>
+    </div>
+
+    <div class="my_card">
+        <div class="header">Hospitalized</div>
+        <div class=data id="totalHosp"></div>
+        <div class="footer" id="newHosp"></div>
+    </div>
+
+
+    <div class="container"></div>
+    <h2 style="text-align: center;">90-Day Timeline<span style="font-size: small">(Washington Co.)</h2>
+    <div class="row justify-content-center">
+        <div class="col-xs-6 col-md-9">
+            <div style="min-width:600px;overflow: scroll;">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+        integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous">
+    </script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+        integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous">
+    </script>
+</body>
+
+</html>

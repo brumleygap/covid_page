@@ -1,0 +1,3 @@
+**/*.code-workspace
+push.settings.jsonc
+sftp.json
