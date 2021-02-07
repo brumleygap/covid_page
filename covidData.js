@@ -9,24 +9,35 @@ Dependencies:
 
 const washingtonCoPopulation = 53740;
 
-function drawChart(covid_data) {
-    let ctx = document.getElementById('myChart').getContext('2d');
-    let cummulativeCases = covid_data.map(obj => obj.total_cases);
-    let newCases = [0]; //first day (3/26/2020) is zero
+function getNewCasesPerDay(rows) {
+    let cummulativeCases = rows.map(obj => obj.total_cases);
+    let casesToday = cummulativeCases[cummulativeCases.length - 1]
+    let newCasesPerDay = [0]; //first day (3/26/2020) is zero
     for (i = 1, count = 0; i < cummulativeCases.length; i++) {
         count = cummulativeCases[i] - cummulativeCases[i - 1]
         if (count < 0) {
             count = 0;
         }
-        newCases.push(count);
+        newCasesPerDay.push(count);
     }
-    //console.log(newCases);
+    return newCasesPerDay
+}
 
-    let casesPer100k = (cummulativeCases[cummulativeCases.length - 1] / washingtonCoPopulation) * 100000;
-    console.log(casesPer100k);
+async function displayData() {
+    let range = new DateRange();
+    let rows = await getCaseData(range.start, range.end);
 
 
-    let sevenDayCaseAvgs = getAvgCases(newCases);
+    let cummulativeCases = rows.map(obj => obj.total_cases);
+    let caseCountToday = cummulativeCases[cummulativeCases.length - 1]
+
+    let casesPer100k = (caseCountToday / washingtonCoPopulation) * 100000;
+    console.log({
+        "cases per 100k": casesPer100k
+    });
+
+
+    let sevenDayCaseAvgs = getAvgCases(rows);
     let avgNewCasesPer100k = (sevenDayCaseAvgs[sevenDayCaseAvgs.length - 1] / washingtonCoPopulation) * 100000;
     let caseRateColor = '';
     console.log({
@@ -46,8 +57,9 @@ function drawChart(covid_data) {
     }
 
     var element = document.getElementById('currentCaseRate');
-    setbackgroundAndTextColor(element, caseRateColor);
-    console.log(caseRateColor)
+    if (element) {
+        setbackgroundAndTextColor(element, caseRateColor);
+    }
 
     //Harvard Global Health Institute Color Code
     /*
@@ -58,7 +70,36 @@ function drawChart(covid_data) {
         and 25 and above puts you in the red.
      */
 
+    let today = rows[rows.length - 1];
+    let seven_days_ago = rows[rows.length - 8];
 
+    let currentTotalCases = parseInt(today.total_cases).toLocaleString('en');
+    let newCasesOverWeek = today.total_cases - seven_days_ago.total_cases;
+    let currentTotalDeaths = parseInt(today.deaths).toLocaleString('en');
+    let newDeathsOverWeek = today.deaths - seven_days_ago.deaths;
+    let currentTotalHospital = parseInt(today.hospitalizations).toLocaleString('en');
+    let newHospitalOverWeek = currentTotalHospital - seven_days_ago.hospitalizations;
+
+    //let todaysDate = new Date(today.report_date).toLocaleDateString();
+
+    document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs).toLocaleString('en');
+    document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[length - 1]).toLocaleString('en');
+    document.getElementById('totalCases').textContent = currentTotalCases;
+    document.getElementById('totalDeaths').textContent = currentTotalDeaths;
+    document.getElementById('totalHosp').textContent = currentTotalHospital;
+
+    document.getElementById('newCases').textContent = "+" + newCasesOverWeek + " past week";
+    document.getElementById('newDeaths').textContent = "+" + newDeathsOverWeek + " past week";
+    document.getElementById('newHosp').textContent = "+" + newHospitalOverWeek + " past week";
+
+
+    drawCaseChart(rows);
+    drawHospitalChart(rows);
+}
+
+function drawCaseChart(rows) {
+    let caseAverages = getAvgCases(rows)
+    let newCases = getNewCasesPerDay(rows)
     Chart.pluginService.register({
         beforeDraw: function (chart, easing) {
             if (chart.config.options.chartArea && chart.config.options.chartArea.backgroundColor) {
@@ -89,15 +130,15 @@ function drawChart(covid_data) {
             y: position.y + -80
         }
     }
-
-    let myChart = new Chart(ctx, {
+    let ctx = document.getElementById('caseChart').getContext('2d');
+    let caseChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: covid_data.slice(-90).map(obj => obj.report_date),
+            labels: rows.slice(-90).map(obj => obj.report_date),
             datasets: [{
                     // Keep at top so it is in front of bars
                     label: '7-day Average',
-                    data: sevenDayCaseAvgs.slice(-90),
+                    data: caseAverages.slice(-90),
                     type: 'line',
                     pointRadius: 0,
                     fill: false,
@@ -159,59 +200,119 @@ function drawChart(covid_data) {
     })
 }
 
-const DateRange = function () {
-    let startDate = moment('2020-03-26T00:00:00').format('YYYY-MM-DD');
-    let endDate = moment().format('YYYY-MM-DD'); //today
+//Hospitalizations Chart
+function drawHospitalChart(rows) {
+    let weeklyHospitalAdmissions = getHospitalAdmissions(rows);
+    Chart.pluginService.register({
+        beforeDraw: function (chart, easing) {
+            if (chart.config.options.chartArea && chart.config.options.chartArea.backgroundColor) {
+                var ctx = chart.chart.ctx;
+                var chartArea = chart.chartArea;
 
-    return {
-        start: startDate,
-        end: endDate
+                ctx.save();
+                ctx.fillStyle = chart.config.options.chartArea.backgroundColor;
+                ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+                ctx.restore();
+            }
+        }
+    });
+
+    Chart.Tooltip.positioners.custom = function (elements, position) {
+        if (!elements.length) {
+            return false;
+        }
+        var offset = 0;
+        //adjust the offset left or right depending on the event position
+        if (elements[0]._chart.width / 2 > position.x) {
+            offset = 20;
+        } else {
+            offset = -20;
+        }
+        return {
+            x: position.x + offset,
+            y: position.y + -80
+        }
     }
+    let hospContext = document.getElementById('weeklyAdmissions').getContext('2d');
+    let hospChart = new Chart(hospContext, {
+        type: 'bar',
+        data: {
+            labels: weeklyHospitalAdmissions.map(obj => obj.week_of),
+            datasets: [{
+                label: 'New Admissions',
+                data: weeklyHospitalAdmissions.map(obj => obj.weekTotal),
+                backgroundColor: 'rgb(22,58,100)',
+                borderColor: 'rgb(22,58,100)',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            legend: {
+                display: true,
+                position: 'bottom',
+            },
+
+            tooltips: {
+                mode: 'index', //displays tiptool for all datasets at that index
+                backgroundColor: 'rgba(255,255,204,0.8)', //cream
+                titleFontColor: 'black',
+                bodyFontColor: 'black',
+                position: 'custom'
+            },
+
+            scales: {
+                yAxes: [{
+                    position: 'right',
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }],
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'week',
+                        tooltipFormat: "MMM Do"
+                    },
+                    gridLines: {
+                        display: false,
+                        drawBorder: true
+                    },
+                    barThickness: '8',
+                    ticks: {
+                        maxRotation: '25',
+                        autoSkip: true
+                    }
+                }]
+            },
+            chartArea: {
+                backgroundColor: 'rgba(255, 255, 255,.7)'
+            }
+        }
+    })
+
+    Chart.pluginService.register({
+        beforeDraw: function (chart, easing) {
+            if (chart.config.options.chartArea && chart.config.options.chartArea.backgroundColor) {
+                var ctx = chart.chart.ctx;
+                var chartArea = chart.chartArea;
+
+                ctx.save();
+                ctx.fillStyle = chart.config.options.chartArea.backgroundColor;
+                ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+                ctx.restore();
+            }
+        }
+    });
 }
 
+
 async function chartData() {
+    drawCaseChart(rows);
+    drawHospitalChart(weeklyHospitalAdmissions);
 
-    let range = new DateRange();
-
-    let rows = await getData(range.start, range.end);
-    rows.forEach(row => row.report_date = moment(row.report_date));
-    let today = rows[rows.length - 1];
-    let seven_days_ago = rows[rows.length - 8];
-
-    let currentTotalCases = parseInt(today.total_cases).toLocaleString('en');
-    let newCasesOverWeek = today.total_cases - seven_days_ago.total_cases;
-    let currentTotalDeaths = parseInt(today.deaths).toLocaleString('en');
-    let newDeathsOverWeek = today.deaths - seven_days_ago.deaths;
-    let currentTotalHospital = parseInt(today.hospitalizations).toLocaleString('en');
-    let newHospitalOverWeek = currentTotalHospital - seven_days_ago.hospitalizations;
-
-    let todaysDate = new Date(today.report_date).toLocaleDateString();
-    let weeklyDeathtotals = new Array();
-    getDeathsByWeek(rows);
-    console.log(weeklyDeathtotals)
-
-    document.getElementById('totalCases').textContent = currentTotalCases;
-    document.getElementById('totalDeaths').textContent = currentTotalDeaths;
-    document.getElementById('totalHosp').textContent = currentTotalHospital;
-
-    document.getElementById('newCases').textContent = "+" + newCasesOverWeek + " past week";
-    document.getElementById('newDeaths').textContent = "+" + newDeathsOverWeek + " past week";
-    document.getElementById('newHosp').textContent = "+" + newHospitalOverWeek + " past week";
-
-    drawChart(rows);
-
-    let testingData = await getTestingData();
-
-    //Add the percentPositive property to testing data
-    //Handle days with zero tests
-    let testingPercents = testingData.map(
-        data => ({
-            ...data,
-            percentPositive: data.number_of_pcr_testing > 0 ? ((data.number_of_positive_pcr_testing / data.number_of_pcr_testing) * 100).toFixed(2) : 0.0
-        }));
 
     // Calculate 7-day moving test averages for all days
-    let testingAvgs = getAvgPositives(testingPercents);
+    let testingAvgs = getAvgPCRTests();
     //Return todays moving 7-day average test rate
     let todayTestingAvg = testingAvgs[testingAvgs.length - 1];
     //Post most recent 7-day positive test rate
@@ -232,16 +333,25 @@ async function chartData() {
     }
 
     let element = document.getElementById('posTest');
-    setbackgroundAndTextColor(element, testRateColor);
+    if (element) {
+        setbackgroundAndTextColor(element, testRateColor);
+    }
 
     let vaccinationPhase = await getVaccinePhase();
-    document.getElementById('phase').textContent = vaccinationPhase;
-    console.log(vaccinationPhase);
-
-
+    document.getElementById('phase').textContent = vaccinationPhase.toUpperCase();
 }
 
-async function getData(start, end) {
+const DateRange = function () {
+    let startDate = moment('2020-03-26T00:00:00').format('YYYY-MM-DD');
+    let endDate = moment().format('YYYY-MM-DD'); //today
+
+    return {
+        start: startDate,
+        end: endDate
+    }
+}
+
+async function getCaseData(start, end) {
     //https://data.virginia.gov/resource/bre9-aqqr.json?$where=(fips='51191' and report_date between '2020-06-12' and '2020-09-10')&$order=report_date asc&$limit=365
     var url = new URL('https://data.virginia.gov/resource/bre9-aqqr.json');
 
@@ -258,10 +368,14 @@ async function getData(start, end) {
         })
     let rows = await data.json();
 
+    //Make report_date a Moment.js obj for chart.js to use
+    rows.forEach(row => row.report_date = moment(row.report_date));
+
     return rows;
 
-    /* Fields
-    "report_date": "2020-07-09T00:00:00.000",
+    // Field Structure in rows
+    /* 
+    "report_date": a moment object,
     "fips": "51001",
     "locality": "Accomack",
     "vdh_health_district": "Eastern Shore",
@@ -305,6 +419,15 @@ async function getTestingData() {
     // Remove the catch-all "Not Reported" record (the 1st object)
     testingData.shift();
 
+    //Add the percentPositive property to testing data
+    //Handle days with zero tests
+    let testingPercents = testingData.map(
+        data => ({
+            ...data,
+            percentPositive: data.number_of_pcr_testing > 0 ? ((data.number_of_positive_pcr_testing / data.number_of_pcr_testing) * 100).toFixed(2) : 0.0
+        }));
+
+
     return testingData;
 }
 
@@ -325,35 +448,39 @@ async function getVaccinePhase() {
     return entry[0].vaccine_phase;
 }
 
-function getAvgCases(counts) {
+function getAvgCases(rows) {
+    let newCasesPerDay = getNewCasesPerDay(rows);
+
     const numberToCount = 7
-    let n = counts.length;
+    let n = newCasesPerDay.length;
     let averages = new Array(numberToCount - 1).fill(0); //skip first few days
     for (i = 0; n - i > (numberToCount - 1); i++) {
-        let values = counts.slice(-(n - i), numberToCount + i)
+        let values = newCasesPerDay.slice(-(n - i), numberToCount + i)
         let avg = values.reduce((accumulator, num) => accumulator + num) / numberToCount
 
         let avgRate = (Math.round(avg * 100) / 100).toFixed(2);
         averages.push(avgRate);
     }
 
-    //Post most recent 7-day case rate
-    document.getElementById('currentCaseRate').textContent = parseFloat(averages[averages.length - 1]).toLocaleString('en');
+    // //Post most recent 7-day case rate
+    // document.getElementById('currentCaseRate').textContent = parseFloat(averages[averages.length - 1]).toLocaleString('en');
 
     return averages
 }
 
-function getAvgPositives(data) {
+function getAvgPCRTests() {
 
+    let testData = getTestingData();
     const numberToCount = 7
     let percentages = new Array();
-    percentages = data.map(obj => parseFloat(obj.percentPositive));
+    //Make percentages a number object
+    percentages = testData.map(obj => parseFloat(obj.percentPositive));
 
-    let n = percentages.length;
+    let length = percentages.length;
     let posTestAvgs = new Array();
 
-    for (i = 0; n - i > (numberToCount - 1); i++) {
-        let pctArray = percentages.slice(-(n - i), numberToCount + i);
+    for (i = 0; length - i > (numberToCount - 1); i++) {
+        let pctArray = percentages.slice(-(length - i), numberToCount + i);
 
         let avg = pctArray.reduce((runningTotal, currentNumber) =>
             runningTotal + currentNumber
@@ -365,22 +492,28 @@ function getAvgPositives(data) {
     return posTestAvgs
 }
 
-function getDeathsByWeek(rows) {
-    rows.forEach(sumWeeklyDeathTotals);
+
+function getHospitalAdmissions(rows) {
+    let hospitalInfo = new Array();
+    let totalAdmissions = 0
+    const sunday = 0;
+    let date
+    rows.forEach((item, index) => {
+        date = item.report_date;
+        if (date.day() === sunday && (index + 7) < rows.length) {
+            totalAdmissions = rows[index + 7].hospitalizations - rows[index].hospitalizations
+            // let week = rows.slice(index, index + 7);
+            // let weekArray = week.map(a => parseInt(a.hospitalizations));
+            // totalAdmissions = weekArray.reduce((sum, admissionsToday) => sum + admissionsToday);
+            hospitalInfo.push({
+                "week_of": date,
+                "weekTotal": totalAdmissions
+            });
+        }
+    });
+    return hospitalInfo;
 }
 
-function sumWeeklyDeathTotals(item, index, array) {
-    const date = item.report_date;
-    const sunday = 0;
-    if (date.getDay() === sunday) {
-        const week = array.slice(index, 7);
-        const totalDeaths = week.map(a => a.deaths).reduce((sum, currentNumber) => sum + currentNumber);
-        weeklyDeathtotals.push({
-            "date": date,
-            "weekTotal": totalDeaths
-        })
-    }
-}
 
 function setbackgroundAndTextColor(element, color) {
     element.style.backgroundColor = color;

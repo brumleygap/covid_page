@@ -18,7 +18,7 @@
 
 <body>
     <script>
-        chartData();
+        displayData();
     </script>
 
     <div>
@@ -62,12 +62,23 @@
     </div>
 
 
-    <div class="container"></div>
-    <h2 style="text-align: center;">90-Day Timeline<span style="font-size: small">(Washington Co.)</h2>
+
+    <h2 style="text-align: center;">90-Day Timeline<span style="font-size: small">(Washington Co.)</span></h2>
     <div class="row justify-content-center">
         <div class="col-xs-6 col-md-9">
             <div style="min-width:600px;overflow: scroll;">
-                <canvas id="myChart"></canvas>
+                <canvas id="caseChart"></canvas>
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+    <h2 style="text-align: center;">Hospital Admissions<span style="font-size: small">(Washington Co.)</span></h2>
+    <div class="row justify-content-center">
+        <div class="col-xs-6 col-md-9">
+            <div style="min-width:600px;overflow: scroll;">
+                <canvas id="weeklyAdmissions"></canvas>
             </div>
         </div>
     </div>
