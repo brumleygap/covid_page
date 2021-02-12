@@ -1,3 +1,4 @@
-**/*.code-workspace
+*.code-workspace
 push.settings.jsonc
 sftp.json
+.vscode/launch.json
