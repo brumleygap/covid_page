@@ -2,4 +2,5 @@
 push.settings.jsonc
 sftp.json
 launch.json
+.vscode/sftp.json
 .vscode/launch.json
