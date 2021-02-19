@@ -82,8 +82,7 @@ async function displayData() {
 
     //let todaysDate = new Date(today.report_date).toLocaleDateString();
 
-    document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs).toLocaleString('en');
-    document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[length - 1]).toLocaleString('en');
+    document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[sevenDayCaseAvgs.length - 1]).toLocaleString('en');
     document.getElementById('totalCases').textContent = currentTotalCases;
     document.getElementById('totalDeaths').textContent = currentTotalDeaths;
     document.getElementById('totalHosp').textContent = currentTotalHospital;
@@ -461,10 +460,6 @@ function getAvgCases(rows) {
         let avgRate = (Math.round(avg * 100) / 100).toFixed(2);
         averages.push(avgRate);
     }
-
-    // //Post most recent 7-day case rate
-    // document.getElementById('currentCaseRate').textContent = parseFloat(averages[averages.length - 1]).toLocaleString('en');
-
     return averages
 }
 
