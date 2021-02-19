@@ -74,14 +74,24 @@ async function displayData() {
     let seven_days_ago = rows[rows.length - 8];
 
     let currentTotalCases = parseInt(today.total_cases).toLocaleString('en');
+    // Calculate 7-day moving test averages for all days
+    let testingAvgs = await getAvgPCRTests();
+    //Return todays moving 7-day average test rate
+    let todayTestingAvg = testingAvgs[testingAvgs.length - 1];
+    //Post most recent 7-day positive test rate
+    document.getElementById('posTest').textContent = todayTestingAvg + '%';
+    setTestingAvgColor(todayTestingAvg);
+
     let newCasesOverWeek = today.total_cases - seven_days_ago.total_cases;
     let currentTotalDeaths = parseInt(today.deaths).toLocaleString('en');
     let newDeathsOverWeek = today.deaths - seven_days_ago.deaths;
     let currentTotalHospital = parseInt(today.hospitalizations).toLocaleString('en');
     let newHospitalOverWeek = currentTotalHospital - seven_days_ago.hospitalizations;
+    let vaccinationPhase = await getVaccinePhase();
 
     //let todaysDate = new Date(today.report_date).toLocaleDateString();
 
+    document.getElementById('phase').textContent = vaccinationPhase.toUpperCase();
     document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[sevenDayCaseAvgs.length - 1]).toLocaleString('en');
     document.getElementById('totalCases').textContent = currentTotalCases;
     document.getElementById('totalDeaths').textContent = currentTotalDeaths;
@@ -305,20 +315,7 @@ function drawHospitalChart(rows) {
 }
 
 
-async function chartData() {
-    drawCaseChart(rows);
-    drawHospitalChart(weeklyHospitalAdmissions);
-
-
-    // Calculate 7-day moving test averages for all days
-    let testingAvgs = getAvgPCRTests();
-    //Return todays moving 7-day average test rate
-    let todayTestingAvg = testingAvgs[testingAvgs.length - 1];
-    //Post most recent 7-day positive test rate
-    document.getElementById('posTest').textContent = todayTestingAvg + '%';
-
-
-    let poprate = ((currentTotalCases / washingtonCoPopulation) * 100000).toFixed(2);
+function setTestingAvgColor(todayTestingAvg) {
 
     let testRateColor = '';
     if (todayTestingAvg < 5) {
@@ -335,9 +332,6 @@ async function chartData() {
     if (element) {
         setbackgroundAndTextColor(element, testRateColor);
     }
-
-    let vaccinationPhase = await getVaccinePhase();
-    document.getElementById('phase').textContent = vaccinationPhase.toUpperCase();
 }
 
 const DateRange = function () {
@@ -418,16 +412,16 @@ async function getTestingData() {
     // Remove the catch-all "Not Reported" record (the 1st object)
     testingData.shift();
 
-    //Add the percentPositive property to testing data
+    //Add a new percentPositive property to testing data
     //Handle days with zero tests
-    let testingPercents = testingData.map(
-        data => ({
-            ...data,
-            percentPositive: data.number_of_pcr_testing > 0 ? ((data.number_of_positive_pcr_testing / data.number_of_pcr_testing) * 100).toFixed(2) : 0.0
+    let testingData_WithPercents = testingData.map(
+        obj => ({
+            ...obj,
+            percentPositive: obj.number_of_pcr_testing > 0 ? ((obj.number_of_positive_pcr_testing / obj.number_of_pcr_testing) * 100).toFixed(2) : 0.0
         }));
 
 
-    return testingData;
+    return testingData_WithPercents;
 }
 
 async function getVaccinePhase() {
@@ -463,9 +457,9 @@ function getAvgCases(rows) {
     return averages
 }
 
-function getAvgPCRTests() {
+async function getAvgPCRTests() {
 
-    let testData = getTestingData();
+    let testData = await getTestingData();
     const numberToCount = 7
     let percentages = new Array();
     //Make percentages a number object
