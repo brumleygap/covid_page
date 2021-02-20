@@ -242,14 +242,17 @@ function drawHospitalChart(rows) {
             y: position.y + -80
         }
     }
+    let weekly_dates = weeklyHospitalAdmissions.map(obj => obj.week_of);
+    let weekly_totals = weeklyHospitalAdmissions.map(obj => obj.weekTotal);
+    
     let hospContext = document.getElementById('weeklyAdmissions').getContext('2d');
     let hospChart = new Chart(hospContext, {
         type: 'bar',
         data: {
-            labels: weeklyHospitalAdmissions.map(obj => obj.week_of),
+            labels: weekly_dates,
             datasets: [{
                 label: 'New Admissions',
-                data: weeklyHospitalAdmissions.map(obj => obj.weekTotal),
+                data: weekly_totals,
                 backgroundColor: 'rgb(22,58,100)',
                 borderColor: 'rgb(22,58,100)',
                 borderWidth: 0
