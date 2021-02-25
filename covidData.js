@@ -94,6 +94,8 @@ async function displayData() {
 
     document.getElementById('phase').textContent = vaccinationPhase.toUpperCase();
     document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[sevenDayCaseAvgs.length - 1]).toLocaleString('en');
+    document.getElementById('doses').textContent = doses.toLocaleString('en')
+
     document.getElementById('totalCases').textContent = currentTotalCases;
     document.getElementById('totalDeaths').textContent = currentTotalDeaths;
     document.getElementById('totalHosp').textContent = currentTotalHospital;
@@ -456,15 +458,18 @@ async function getDoseCount() {
 
     let data = await fetch(url)
         .catch(error => {
-            console.error("Error getting case data", url)
+            console.error("Error getting dose count data", url)
         })
-    let rows = await data.json();
+    const rows = await data.json();
 
-    //Make report_date a Moment.js obj for chart.js to use
-    //rows.forEach(row => row.report_date = moment(row.report_date));
+    const reduce_function = (runningTotal, item) => {
+        return runningTotal + parseInt(item);
+    };
 
-    console.log(rows)
-    return rows;
+    const total_doses = rows.map(a => a.vaccine_doses_administered)
+        .reduce(reduce_function, 0);
+
+    return total_doses;
 
     //Columns in this Dataset
     /*
@@ -477,7 +482,6 @@ async function getDoseCount() {
     Dose Number	-- for the person who gets the vaccine. 1 or 2 (Number)
     Vaccine Doses Administered Count -- Total number of vaccines given. (Number)
     */
-
 };
 
 
