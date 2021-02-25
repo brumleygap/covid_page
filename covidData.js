@@ -88,6 +88,7 @@ async function displayData() {
     let currentTotalHospital = parseInt(today.hospitalizations).toLocaleString('en');
     let newHospitalOverWeek = currentTotalHospital - seven_days_ago.hospitalizations;
     let vaccinationPhase = await getVaccinePhase();
+    let doses = await getDoseCount();
 
     //let todaysDate = new Date(today.report_date).toLocaleDateString();
 
@@ -244,7 +245,7 @@ function drawHospitalChart(rows) {
     }
     let weekly_dates = weeklyHospitalAdmissions.map(obj => obj.week_of);
     let weekly_totals = weeklyHospitalAdmissions.map(obj => obj.weekTotal);
-    
+
     let hospContext = document.getElementById('weeklyAdmissions').getContext('2d');
     let hospChart = new Chart(hospContext, {
         type: 'bar',
@@ -443,6 +444,42 @@ async function getVaccinePhase() {
 
     return entry[0].vaccine_phase;
 }
+
+async function getDoseCount() {
+    var url = new URL('https://data.virginia.gov/resource/28k2-x2rj.json');
+
+    var params = [
+        ['$where', "(fips='51191')"],
+        ['$order', 'administration_date asc']
+    ]
+    url.search = new URLSearchParams(params).toString();
+
+    let data = await fetch(url)
+        .catch(error => {
+            console.error("Error getting case data", url)
+        })
+    let rows = await data.json();
+
+    //Make report_date a Moment.js obj for chart.js to use
+    //rows.forEach(row => row.report_date = moment(row.report_date));
+
+    console.log(rows)
+    return rows;
+
+    //Columns in this Dataset
+    /*
+    Administration Date	-- Date when the vaccine dose is administered to a person. (Date & Time)
+    FIPS -- 5-digit code (51XXX) for the locality (Plain Text)
+    Locality -- location where the person lives who was administered the vaccine. (Plain Text)
+    Health District -- Name of health district	(Plain Text)
+    Facility Type -- for the provider that gave the vaccine. (Plain Text)
+    Vaccine Manufacturer -- manufacturing company. (Plain Text)
+    Dose Number	-- for the person who gets the vaccine. 1 or 2 (Number)
+    Vaccine Doses Administered Count -- Total number of vaccines given. (Number)
+    */
+
+};
+
 
 function getAvgCases(rows) {
     let newCasesPerDay = getNewCasesPerDay(rows);
