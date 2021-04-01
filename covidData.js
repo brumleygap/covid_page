@@ -357,7 +357,7 @@ async function getCaseData(start, end) {
     var params = [
         ['$where', "(fips='51191' and report_date between '" + start + "' and '" + end + "')"],
         ['$order', 'report_date asc'],
-        ['$limit', '365']
+        ['$limit', '800']
     ]
     url.search = new URLSearchParams(params).toString();
 
@@ -451,7 +451,7 @@ async function getDoseCount() {
     var url = new URL('https://data.virginia.gov/resource/28k2-x2rj.json');
 
     var params = [
-        ['$where', "(fips='51191')"],
+        ['$where', "(fips='51191' and dose_number='1')"],
         ['$order', 'administration_date asc']
     ]
     url.search = new URLSearchParams(params).toString();
