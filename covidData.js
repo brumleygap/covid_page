@@ -87,14 +87,16 @@ async function displayData() {
     let newDeathsOverWeek = today.deaths - seven_days_ago.deaths;
     let currentTotalHospital = parseInt(today.hospitalizations).toLocaleString('en');
     let newHospitalOverWeek = currentTotalHospital - seven_days_ago.hospitalizations;
-    let vaccinationPhase = await getVaccinePhase();
     let doses = await getDoseCount();
+    let pctOneVax = ((doses.single / washingtonCoPopulation) * 100).toFixed(1);
+    let pctFullyVaxed = ((doses.fullyVaxed / washingtonCoPopulation) * 100).toFixed(1);
 
     //let todaysDate = new Date(today.report_date).toLocaleDateString();
 
-    document.getElementById('phase').textContent = vaccinationPhase.toUpperCase();
+    document.getElementById('pctOneVax').textContent = pctOneVax;
+    document.getElementById('pctFullyVaxed').textContent = pctFullyVaxed;
     document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[sevenDayCaseAvgs.length - 1]).toLocaleString('en');
-    document.getElementById('doses').textContent = doses.toLocaleString('en')
+    document.getElementById('doses').textContent = doses.single.toLocaleString('en')
 
     document.getElementById('totalCases').textContent = currentTotalCases;
     document.getElementById('totalDeaths').textContent = currentTotalDeaths;
@@ -357,7 +359,7 @@ async function getCaseData(start, end) {
     var params = [
         ['$where', "(fips='51191' and report_date between '" + start + "' and '" + end + "')"],
         ['$order', 'report_date asc'],
-        ['$limit', '800']
+        ['$limit', '999999999']
     ]
     url.search = new URLSearchParams(params).toString();
 
@@ -430,29 +432,13 @@ async function getTestingData() {
     return testingData_WithPercents;
 }
 
-async function getVaccinePhase() {
-    var url = new URL('https://data.virginia.gov/resource/hjhd-yn2m.json');
-
-    var params = [
-        ['$where', "locality='Washington'"]
-    ]
-    url.search = new URLSearchParams(params).toString();
-
-    let data = await fetch(url)
-        .catch(error => {
-            console.error("Error getting vaccination phase data", url)
-        })
-    let entry = await data.json();
-
-    return entry[0].vaccine_phase;
-}
-
 async function getDoseCount() {
     var url = new URL('https://data.virginia.gov/resource/28k2-x2rj.json');
 
     var params = [
-        ['$where', "(fips='51191' and dose_number='1')"],
-        ['$order', 'administration_date asc']
+        ['$where', "fips='51191'"],
+        ['$order', 'administration_date asc'],
+        ['$limit', '999999999']
     ]
     url.search = new URLSearchParams(params).toString();
 
@@ -461,15 +447,23 @@ async function getDoseCount() {
             console.error("Error getting dose count data", url)
         })
     const rows = await data.json();
+    const oneVax = rows.filter(row => row.dose_number === '1');
+    const fullyVaxed = rows.filter(row => (row.dose_number === '2' || row.vaccine_manufacturer === 'J&J'));
 
     const reduce_function = (runningTotal, item) => {
         return runningTotal + parseInt(item);
     };
 
-    const total_doses = rows.map(a => a.vaccine_doses_administered)
+    const totalOneVax = oneVax.map(a => a.vaccine_doses_administered)
         .reduce(reduce_function, 0);
 
-    return total_doses;
+    const totalFullyVaxed = fullyVaxed.map(a => a.vaccine_doses_administered)
+        .reduce(reduce_function, 0);
+
+    return {
+        'single': totalOneVax,
+        'fullyVaxed': totalFullyVaxed
+    }
 
     //Columns in this Dataset
     /*
