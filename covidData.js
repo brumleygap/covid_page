@@ -7,7 +7,7 @@ Dependencies:
 ============================
 */
 
-const washingtonCoPopulation = 53740;
+const washingtonCoPopulation = 53935; //2020 Census Data
 
 function getNewCasesPerDay(rows) {
     let cummulativeCases = rows.map(obj => obj.total_cases);
