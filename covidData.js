@@ -96,7 +96,7 @@ async function displayData() {
     document.getElementById('pctOneVax').textContent = pctOneVax;
     document.getElementById('pctFullyVaxed').textContent = pctFullyVaxed;
     document.getElementById('currentCaseRate').textContent = parseFloat(sevenDayCaseAvgs[sevenDayCaseAvgs.length - 1]).toLocaleString('en');
-    document.getElementById('doses').textContent = doses.single.toLocaleString('en')
+    document.getElementById('doses').textContent = doses.fullyVaxed.toLocaleString('en')
 
     document.getElementById('totalCases').textContent = currentTotalCases;
     document.getElementById('totalDeaths').textContent = currentTotalDeaths;
@@ -392,7 +392,8 @@ async function getTestingData() {
     var url = new URL('https://data.virginia.gov/resource/3u5k-c2gr.json');
 
     var params = [
-        ['$where', "health_district='Mount Rogers'"]
+        ['$where', "health_district='Mount Rogers'"],
+        ['$limit', '999999']
     ]
     url.search = new URLSearchParams(params).toString();
 
